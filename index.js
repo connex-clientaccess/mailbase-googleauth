@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/auth/google',
-  passport.authenticate('google', { scope: ['email', 'profile']})
+  passport.authenticate('google', { scope: ['email', 'profile', 'https://www.googleapis.com/auth/gmail.readonly']})
 )
 
 app.get('/google/callback',
@@ -34,6 +34,7 @@ app.get('/auth/failure', (req, res) => {
 app.get('/protected', isLoggedIn, (req, res) => {
     const accessToken = req.user.accessToken;
     console.log(accessToken);
+    console.log('EMAILS:', req.user.emails);
     res.send(`Hello ${req.user.displayName}!`);
 });
 
