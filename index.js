@@ -1,6 +1,7 @@
 const express = require('express');
 const session = require('express-session')
 const passport = require('passport');
+const bodyParser = require('body-parser');
 require('./auth');
 
 function isLoggedIn(req, res, next) {
@@ -11,6 +12,8 @@ const app = express();
 app.use(session({ secret: "cats"}));
 app.use(passport.initialize());
 app.use(passport.session());
+
+app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
     res.send('<a href="/auth/google">Authenticate with Google</a>');
@@ -52,6 +55,13 @@ app.get('/logout', (req, res) => {
             res.send('Goodbye!');
         });
     });
+});
+
+app.post('/gmail/push', (req, res) => {
+    // Handle the incoming push notification
+    const message = req.body.message;
+    console.log('New email received:', message.data);
+    res.sendStatus(200);
 });
 
 
