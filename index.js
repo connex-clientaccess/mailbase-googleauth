@@ -8,6 +8,7 @@ require('./auth');
 const gmailPubSubTopic = "projects/mailbase-395510/topics/emails";
 const uniqueId = Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
 const subName = `emails-sub-${uniqueId}`;
+let arr = []
 
 function isLoggedIn(req, res, next) {
     req.user ? next() : res.sendStatus(401);
@@ -65,7 +66,9 @@ app.get('/logout', (req, res) => {
 app.post('/gmail/push', (req, res) => {
     // Handle the incoming push notification
     const message = req.body.message;
-    console.log('New email received:', message);
+    arr.push(message);
+    const newMessage = arr[arr.length - 1];
+    console.log('New email received:', newMessage);
     res.sendStatus(200);
 });
 
@@ -78,7 +81,7 @@ app.listen(3000, async () => {
   async function createPushSubscription(topicNameOrId, subscriptionNameOrId) {
     const options = {
       pushConfig: {
-        pushEndpoint: `https://3b1a-154-160-5-234.ngrok-free.app/gmail/push`,
+        pushEndpoint: `https://ac33-154-160-5-234.ngrok-free.app/gmail/push`,
       },
     };
 
@@ -93,11 +96,3 @@ app.listen(3000, async () => {
 });
 
 
-//  // Publish a message to the Pub/Sub topic to trigger push notifications
-//  const pubSubClient = new PubSub();
-//  const topic = pubSubClient.topic(gmailPubSubTopic);
-
-//  const dataBuffer = Buffer.from('New email received'); // Customize the message payload
-//  const messageId = await topic.publish(dataBuffer);
-
-//  console.log(`Message ${messageId} published.`);

@@ -32,8 +32,6 @@ function watchUserGmail(accessToken) {
   );
 }
 
-
-
 passport.use(
   new GoogleStrategy(
     {
