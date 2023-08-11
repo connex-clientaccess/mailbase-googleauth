@@ -5,7 +5,34 @@ const { PubSub } = require("@google-cloud/pubsub");
 require("dotenv").config();
 
 const gmailPubSubTopic = "projects/mailbase-395510/topics/emails";
-const subName = "emails-sub";
+
+
+function watchUserGmail(accessToken) {
+  const oauth2Client = new google.auth.OAuth2();
+  oauth2Client.setCredentials({ access_token: accessToken });
+  const gmail = google.gmail({ version: "v1", auth: oauth2Client });
+
+  const request = {
+    labelIds: ["INBOX"],
+    topicName: gmailPubSubTopic, // Replace with your Pub/Sub topic
+  };
+
+  gmail.users.watch(
+    {
+      userId: "me",
+      resource: request,
+    },
+    (err, response) => {
+      if (err) {
+        console.error("Error setting up Gmail push notification:", err);
+      } else {
+        console.log("Gmail push notification set up:", response.data);
+      }
+    }
+  );
+}
+
+
 
 passport.use(
   new GoogleStrategy(
@@ -32,29 +59,7 @@ passport.use(
           }
 
           profile.emails = response.data.messages.map((message) => message.id);
-
-          // Creates a client; cache this for further use
-          const pubSubClient = new PubSub();
-
-          async function createPushSubscription(
-            topicNameOrId,
-            subscriptionNameOrId
-          ) {
-            const options = {
-              pushConfig: {
-                // Set to an HTTPS endpoint of your choice. If necessary, register
-                // (authorize) the domain on which the server is hosted.
-                pushEndpoint: `https://f804-154-160-5-234.ngrok-free.app/gmail/push`,
-              },
-            };
-
-            await pubSubClient
-              .topic(topicNameOrId)
-              .createSubscription(subscriptionNameOrId, options);
-            console.log(`Subscription ${subscriptionNameOrId} created.`);
-          }
-          createPushSubscription(gmailPubSubTopic, subName);
-
+          watchUserGmail(accessToken);
           return done(null, profile);
         }
       );
@@ -70,19 +75,3 @@ passport.deserializeUser(function (user, done) {
   done(null, user);
 });
 
-// Subscribe to the Gmail push notification topic
-//  const pubSub = google.pubsub({ version: 'v1', auth: oauth2Client });
-
-//  pubSub.projects.subscriptions.create({
-//    name: 'projects/mailbase-395510/subscriptions/emails-sub', // Replace with your actual project ID and subscription name
-//    topic: gmailPubSubTopic,
-//    pushConfig: {
-//      pushEndpoint: 'https://f804-154-160-5-234.ngrok-free.app/gmail/push', // Replace with your server's push endpoint
-//    },
-//  }, (err, subscription) => {
-//    if (err) {
-//      console.error('Error creating subscription', err);
-//      return done(err);
-//    }
-
-//   });

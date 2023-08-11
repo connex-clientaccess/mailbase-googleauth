@@ -2,7 +2,12 @@ const express = require('express');
 const session = require('express-session')
 const passport = require('passport');
 const bodyParser = require('body-parser');
+const { PubSub } = require("@google-cloud/pubsub");
 require('./auth');
+
+const gmailPubSubTopic = "projects/mailbase-395510/topics/emails";
+const uniqueId = Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+const subName = `emails-sub-${uniqueId}`;
 
 function isLoggedIn(req, res, next) {
     req.user ? next() : res.sendStatus(401);
@@ -20,7 +25,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/auth/google',
-  passport.authenticate('google', { scope: ['email', 'profile', 'https://www.googleapis.com/auth/gmail.readonly']})
+  passport.authenticate('google', { scope: ['email', 'profile', 'https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.modify']})
 )
 
 app.get('/google/callback',
@@ -60,11 +65,39 @@ app.get('/logout', (req, res) => {
 app.post('/gmail/push', (req, res) => {
     // Handle the incoming push notification
     const message = req.body.message;
-    console.log('New email received:', message.data);
+    console.log('New email received:', message);
     res.sendStatus(200);
 });
 
 
-app.listen(3000, () => {
+app.listen(3000, async () => {
     console.log('listening on port 3000')
+    // Create push subscription here
+  const pubSubClient = new PubSub();
+
+  async function createPushSubscription(topicNameOrId, subscriptionNameOrId) {
+    const options = {
+      pushConfig: {
+        pushEndpoint: `https://3b1a-154-160-5-234.ngrok-free.app/gmail/push`,
+      },
+    };
+
+    await pubSubClient
+      .topic(topicNameOrId)
+      .createSubscription(subscriptionNameOrId, options);
+    console.log(`Subscription ${subscriptionNameOrId} created.`);
+  }
+
+  createPushSubscription(gmailPubSubTopic, subName);
+   
 });
+
+
+//  // Publish a message to the Pub/Sub topic to trigger push notifications
+//  const pubSubClient = new PubSub();
+//  const topic = pubSubClient.topic(gmailPubSubTopic);
+
+//  const dataBuffer = Buffer.from('New email received'); // Customize the message payload
+//  const messageId = await topic.publish(dataBuffer);
+
+//  console.log(`Message ${messageId} published.`);
